@@ -27,6 +27,10 @@ git clone https://github.com/mir-am/social-app-shell.git && cd social-app-shell
 ```
 sh sn help
 ```
+3- A user or organization needs to track their own remote git servers as follows:
+```
+git branch --set-upstream-to=<remote>/<branch> master
+```
 
 # Usage
 ```

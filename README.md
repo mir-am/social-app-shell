@@ -1,6 +1,13 @@
 # SN - A command-line based social network program for Unix systems
 This is a social network program that is developed for edX Unix course. The program is implemented based on the given specification by the course.
 
+Content:
+- [Requirements ](#requirements)
+- [Quick install](#quick-install)
+- [Usage](#usage)
+- [Specifications](#Specifications)
+- [License](#license)
+
 # Requirements 
 In order to install and run the program, the following requirements should be met:
 
@@ -40,6 +47,39 @@ networks          Show a list of existing social networks in the system.
 follow <name>     Follow a specified user.
 unfollow <name>   Unfollow a specified user.
 help              Show the description of program's options.
+```
+
+# Specifications
+The `sn` program is designed and implemeneted based on the following specifications:
+- The `networks` folder contains data for existing social networks. For instance:
+```
+-networks
+--food_network
+---posts
+----pizza
+---members
+```
+- The `users` folder contains data for the users of the social network program. For instance:
+```
+-users
+--amir
+---networks
+---following
+---liked_posts
+```
+
+- The `posts` folder contains posts for the social network.
+- The `members` file contains a list of users that are subscribed to the social network.
+- The `networks` file contains a list of social networks that a user is subscribed to.
+- The `following` file contains a list of users that a user is following.
+- Each post has the following format:
+```
+Network: The name of a social network
+Title: Name of a post
+Author: Name of the post's author
+Date: The date at which the post is published (e.g. Thu May 28 18:07:59 CEST 2020)
+-----------------------
+Content of the post
 ```
 
 # License

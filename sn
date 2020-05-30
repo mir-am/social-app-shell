@@ -7,6 +7,9 @@
 
 # Functions definitions #############################################
 function create_social_network() {
+    # Creates required folders and files for a new social network.
+    # $1: The name of a social network.
+
         mkdir -p "./networks/$1";
         mkdir -p "./networks/$1/posts";
         touch "./networks/$1/members";
@@ -14,28 +17,38 @@ function create_social_network() {
 }
 
 function create_user() {
+    # Creates required files for a new user based on his/her system username.
+
     mkdir -p "./users/$(whoami)"
     # A file to track networks that a user joined
     touch "./users/$(whoami)/networks"
     # A file to track people whom a user follows
     touch "./users/$(whoami)/following"
+    # A file to track posts that a user likes
+    touch "./users/$(whoami)/liked_posts"
     printf "The user %s is created on the system. Welcome!\n" "$(whoami)"
 }
 
 function join_social_network() {
+    # Lets the user join a given social network if exists.
+    # $1: The name of a social network
+
     if is_joined_network "$1"; then
         printf "You've already joined the network %s\n" "$1";
     else
         printf "%s\n" "$(whoami)" >> "./networks/$1/members";
         printf "%s\n" "$1" >> "./users/$(whoami)/networks"; 
-        printf "Joined the social network %s.\n" "$1";
+        printf "You've now joined the social network %s.\n" "$1";
     fi
 }
 
 function leave_social_network() {
+    # Lets the user leave a social network
+    # $1: The name of a social network
+
     if is_joined_network "$1"; then
-        awk -v u="$(whoami)"  '{!/^u$/}' "networks/$1/members" > "networks/$1/temp" && mv "networks/$1/temp" "networks/$1/members";
-        awk -v n="$1" '{!/^n$/}' "users/$(whoami)/networks" > "users/$(whoami)/temp" && mv "users/$(whoami)/temp" "users/$(whoami)/networks";
+        rm_line_from_file "$(whoami)" "networks/$1/members";
+        rm_line_from_file "$1" "users/$(whoami)/networks";
         printf "You left the network %s\n" "$1";
     else
         printf "You have not joined the network %s\n" "$1";
@@ -43,11 +56,19 @@ function leave_social_network() {
 }
 
 function show_network_members() {
-    printf "The members of the social network %s are as follows:\n" "$1";
-    cat "networks/$1/members";
+    # Prints the list of members from the networks that the user joined.
+
+    while read -r n; do
+        printf "The members of the network %s:\n" "$n";
+        while read -r m; do
+            printf "%s\n" "$m";
+        done < networks/"$n"/members
+    done < users/"$(whoami)"/networks
 }
 
 function post_new_story() {
+    # Lets the user publish a post in a specified network.
+
     read -rp "Enter the name of the network: " network_name;
     if can_user_post "$network_name"; then
         read -rp "Enter title of your post: " post_title;
@@ -55,14 +76,15 @@ function post_new_story() {
         post_content=$(cat)
 
         # Here, the post title should be converted to a valid file name.
-        post_file_title="$(convert_post_title "$post_title")";
-        printf "Network: %s\nTitle: %s\nAuthor: %s\nDate: %s\n-----------------------\n%s" "$network_name" "$post_title" "$(whoami)" "$(date)" "$post_content" > "networks/$1/posts/$post_file_title";
-        printf "Your post was succesfully written to %s\n" "networks/$1/posts/$post_file_title";
+        post_file_title=$(convert_post_title "$post_title");
+        printf "Network: %s\nTitle: %s\nAuthor: %s\nDate: %s\n-----------------------\n%s" "$network_name" "$post_title" "$(whoami)" "$(date)" "$post_content" > "networks/$network_name/posts/$post_file_title";
+        printf "Your post was succesfully written to %s\n" "networks/$network_name/posts/$post_file_title";
     fi
 }
 
 function can_user_post() {
-    # Checks whether the user can post on a soical network or not
+    # Checks whether the user can post on a soical network or not.
+
     if check_network_exists "$1"; then
         if is_joined_network "$1"; then
             return 0;
@@ -72,6 +94,9 @@ function can_user_post() {
 }
 
 function check_network_exists() {
+    # Checks whether a social network exists in the system or not.
+    # $1: The name of a network
+
     if [[ -d "networks/$1" ]]; then
         return 0;
     else
@@ -81,40 +106,160 @@ function check_network_exists() {
 }
 
 function check_user_exists() {
+    # Checks whether the user already exists in the system.
+
     if [[ -d "./users/$(whoami)" ]]; then
-        printf "Welcome %s!\n" "$(whoami)"
+        #printf "Welcome %s!\n************************\n" "$(whoami)"
         return 0;
     else
         return 1;
     fi
 }
 
-function show_existing_posts() {
-    printf "List of existing posts:\n";
-    for n in users/$(whoami)/network; do
-        for p in "networks/$n/posts"/*; do
-            < "$p" grep 'Title: ' | cut -d ":" -f 2;
+function find_existing_posts() {
+    # Extracts a list of posts from the networks that the user joined.
+
+    # Posts are a global variable across the whole script.
+    posts=()
+    while read -r n; do
+        for p in networks/"$n"/posts/*; do
+           #posts+=("$(< "$p" grep 'Title: ' | cut -d ":" -f 2;)");
+           posts+=("$p") 
         done
+    done < users/"$(whoami)"/networks
+}
+
+function show_existing_posts() {
+    # Prints posts from the networks that the user joined.
+
+    printf "List of existing posts:\n";
+    for p in "${posts[@]}"; do
+        printf "%s\n" "$(show_post_title "$p")";
+    done
+}
+
+function show_post() {
+    # Shows a particular post for a user.
+    # $1: The name of a post
+    # $2: Prints the specified post on screen if exists
+
+    for p in "${posts[@]}"; do
+        if [[ $1 == "$(show_post_title "$p")" ]]; then
+            if [[ $2 -eq 1 ]]; then
+                cat "$p";
+            fi
+            return 0;
+        fi
+    done
+    printf "The post %s doesn't exist on the system.\nMake sure that you joined a network and use pull option.\n" "$1"
+    return 1;
+}
+
+function show_existing_networks() {
+    # Prints a list of existing networks in the system.
+
+    printf "List of existing networks:\n";
+    for n in ./networks/*/; do
+        printf "%s\n" "$(basename "$n")";
     done
 }
 
 function convert_post_title() {
     # Converts the title of a post to a valid name that can be saved on the disk
-    return "$(echo "$1" | tr " " "_" | tr '[:upper:]' '[:lower:]')"
+    # $1: The title of a post
+
+    echo "$(echo "$1" | tr " " "_" | tr '[:upper:]' '[:lower:]')";
+}
+
+function show_post_title() {
+    # Shows a post title after trimming trailing and leading space
+    # $1: The path of a post
+
+    echo "$(< "$1" grep 'Title: ' | cut -d ":" -f 2 | awk '{$1=$1;print}')";
 }
 
 function is_joined_network() {
+    # Checks whether a user joined to a network or not.
+    # $1: The name of a network
+
     if grep -q "$(whoami)" "./networks/$1/members" && grep -q "$1" "./users/$(whoami)/networks"; then
         return 0;
     else
-        printf "You have not joined the network %s yet!\n" "$1";
+        printf "You have not joined the social network %s yet!\n" "$1";
         return 1;
     fi
 }
 
-#####################################################################
+function follow_user() {
+    # Adds another user to a user's following users.
+    # $1: The name of a user
+
+    if [[ -d "./users/$1" ]]; then
+        printf "%s\n" "$1" >> "./users/$(whoami)/following";
+        printf "You're now following the user %s.\n" "$1";
+    else
+        printf "The user %s doesn't exist in the system.\n" "$1";
+    fi
+}
+
+function unfollow_user() {
+    # Removes a user from a user's following users.
+    # $1: The name of a user
+
+    if [[ -d "./users/$1" ]]; then
+        rm_line_from_file "$1" "./users/$(whoami)/following";
+        printf "You've now unfollowed the user %s.\n" "$1";
+    else
+        printf "The user %s doesn't exist in the system.\n" "$1";
+    fi
+}
+
+function rm_line_from_file() {
+    # Removes a given line from a file.
+    # $1: a line
+
+    awk -v u="$1"  '{!/^u$/}' "$2" > "$(dirname "$2")/temp" && mv "$(dirname "$2")/temp" "$2";
+}
+
+function like_post() {
+    # Adds a post to a user's liked posts.
+    # $1: The name of a post
+
+    if show_post "$1" "0"; then
+        if ! grep -q "$1" "./users/$(whoami)/liked_posts"; then
+            printf "%s\n" "$1" >> "./users/$(whoami)/liked_posts";
+            printf "You've liked the post %s\n" "$1";
+        else
+            printf "You've already liked the post %s\n" "$1";
+        fi
+    fi
+}
+
+function help() {
+    # Shows the description of program's options for the user.
+
+    echo "sn - A command-line based social network program for Unix systems (v0.1)"
+    echo "Copyright (c) 2020, Amir M. Mir"
+    echo
+    echo "Options:"
+    echo "create <name>     Create a new social network in the system."
+    echo "join <name>       Join an existing social network in the system."
+    echo "leave <name>      Leave an existing social network."
+    echo "pull              Pull new social networks and posts."
+    echo "log               Show a list of existing posts."
+    echo "show <name>       Show a specified post."
+    echo "post              Publish a new post."
+    echo "like <name>       Like a specified post."
+    echo "push              Push locally made changes back to the server."
+    echo "members           Show the members of subscribed networks."
+    echo "networks          Show a list of existing social networks in the system."
+    echo "follow <name>     Follow a specified user."
+    echo "unfollow <name>   Unfollow a specified user."
+    echo "help              Show the description of program's options."
+}
 
 function main() {
+    # The social app starts from here based on given options.
 
     if [[ $# -eq 0 ]]; then
         printf "No arguments passed.\npass help to see the avialable options.\n"
@@ -124,6 +269,9 @@ function main() {
         if ! check_user_exists; then
             create_user;
         fi
+
+        # Finds existing posts at the time of running the social app.
+        find_existing_posts;
 
         if [[ $1 = "create" ]]; then
             if check_network_exists "$2"; then
@@ -144,31 +292,34 @@ function main() {
                 printf "The network %s doesn't exist!\n" "$1"
             fi
         elif [[ $1 = "pull" ]]; then
-            echo "Pulling new posts and likes"
+            printf "Pulling new posts and likes\n";
+            git pull;
         elif [[ $1 = "log" ]]; then
-            if check_network_exists "$2" && is_joined_network "$2"; then
-                 show_existing_posts "$2";
-            fi
+            show_existing_posts;
         elif [[ $1 = "show" ]]; then
-            echo " Showing the post $2"
+            show_post "$2" "1";
         elif [[ $1 = "post" ]]; then
-            if check_network_exists "$2"; then
-                post_new_story "$2";
-            fi
+            post_new_story;
         elif [[ $1 = "like" ]]; then
-            echo "You liked the post $2"
+            like_post "$2";
         elif [[ $1 = "push" ]]; then 
             echo "Pushing local changes back to the server"
         elif [[ $1 = "members" ]]; then
-            show_network_members "$2";
+            show_network_members;
+        elif [[ $1 = 'networks' ]]; then
+            show_existing_networks;
         elif [[ $1 = "follow" ]]; then
-            echo "Followed the posts of the member $2"
+            follow_user "$2";
         elif [[ $1 = "unfollow" ]]; then
-            echo "Unfollowed the posts of the member $2"
+            unfollow_user "$2";
+        elif [[ $1 = "help" ]]; then
+            help;
         else
             printf "%s is not a recongnized command.\nUse help option to see the description of the available commands.\n" "$1"
         fi
     fi
 }
+
+#####################################################################
 
 main "$@"

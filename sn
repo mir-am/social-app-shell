@@ -27,6 +27,14 @@ function push_changes() {
     printf "Successfully pushed recent changes to the server.\n";
 }
 
+function initialize_git() {
+    # It intializes a git repository if the program is used without git.
+     if ! git -C ./ rev-parse; then
+        git init;
+        printf "Intialized a git repository.\n";
+     fi
+}
+
 function help() {
     # Shows the description of program's options for the user.
 
@@ -57,6 +65,9 @@ function main() {
         printf "No arguments passed.\npass help to see the avialable options.\n"
         exit 1
     else
+
+        # Checks whether the program is used within a Git repository.
+        initialize_git;
 
         if ! check_user_exists; then
             create_user;

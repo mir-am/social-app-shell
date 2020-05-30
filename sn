@@ -17,6 +17,16 @@ function rm_line_from_file() {
     awk -v u="$1"  '{!/^u$/}' "$2" > "$(dirname "$2")/temp" && mv "$(dirname "$2")/temp" "$2";
 }
 
+function push_changes() {
+    # Pushes recent changes to the Git server
+
+    git add networks users;
+    git commit -m "Updating social networks - $(date +"%y-%m-%d %r")";
+    git push;
+    printf "*******************************\n";
+    printf "Successfully pushed recent changes to the server.\n";
+}
+
 function help() {
     # Shows the description of program's options for the user.
 
@@ -85,7 +95,7 @@ function main() {
         elif [[ $1 = "like" ]]; then
             like_post "$2";
         elif [[ $1 = "push" ]]; then 
-            echo "Pushing local changes back to the server"
+            push_changes;
         elif [[ $1 = "members" ]]; then
             show_network_members;
         elif [[ $1 = 'networks' ]]; then

@@ -1,0 +1,10 @@
+# This is the manifest file for building and checking sn program on Travis CI
+
+language: shell
+dist: xenial
+
+install:
+- git clone https://github.com/mir-am/social-app-shell.git
+
+script:
+- shellcheck sn

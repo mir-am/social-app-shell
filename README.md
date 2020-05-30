@@ -1,4 +1,6 @@
 # SN - A command-line based social network program for Unix systems
+[![Build Status](https://travis-ci.com/mir-am/social-app-shell.svg?branch=master)](https://travis-ci.com/mir-am/social-app-shell)
+
 This is a social network program that is developed for edX Unix course. The program is implemented based on the given specification by the course.
 
 Content:
@@ -50,7 +52,7 @@ help              Show the description of program's options.
 ```
 
 # Specifications
-The `sn` program is designed and implemeneted based on the following specifications:
+The `sn` program is designed and implemented based on the following specifications:
 - The `networks` folder contains data for existing social networks. For instance:
 ```
 -networks

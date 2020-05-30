@@ -7,4 +7,4 @@ install:
 - git clone https://github.com/mir-am/social-app-shell.git
 
 script:
-- shellcheck sn
+- shellcheck sn networks.sh posts.sh users.sh

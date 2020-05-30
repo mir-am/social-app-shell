@@ -45,8 +45,12 @@ function follow_user() {
     # $1: The name of a user
 
     if [[ -d "./users/$1" ]]; then
-        printf "%s\n" "$1" >> "./users/$(whoami)/following";
-        printf "You're now following the user %s.\n" "$1";
+        if ! grep -q "$1" "./users/$(whoami)/following"; then
+            printf "%s\n" "$1" >> "./users/$(whoami)/following";
+            printf "You're now following the user %s.\n" "$1";
+        else
+            printf "You're already following the user %s.\n" "$1";
+        fi
     else
         printf "The user %s doesn't exist in the system.\n" "$1";
     fi
